@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian History Flashcards</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #333;
+        }
+
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+
+        #progress {
+            margin-bottom: 16px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        .flashcard-container {
+            width: 90%;
+            max-width: 500px;
+            height: 300px;
+            perspective: 1000px;
+            margin-bottom: 14px;
+            cursor: pointer;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-radius: 15px;
+        }
+
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+
+        .card-front {
+            background-color: #ffffff;
+            color: #2c3e50;
+            border: 2px solid #e0e0e0;
+        }
+
+        .card-back {
+            background-color: #34495e;
+            color: #ecf0f1;
+            transform: rotateY(180deg);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: #95a5a6;
+            margin-bottom: 14px;
+        }
+
+        /* ── TTS Bar ── */
+        #tts-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            background: #fff;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            width: 90%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+
+        #tts-btn {
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            border-radius: 7px;
+            background-color: #27ae60;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            min-width: 82px;
+        }
+        #tts-btn:hover { background-color: #219150; }
+        #tts-btn.stop  { background-color: #e74c3c; }
+        #tts-btn.stop:hover { background-color: #c0392b; }
+
+        #tts-status {
+            flex: 1;
+            font-size: 0.88rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        /* Countdown ring */
+        #countdown-wrap {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        #countdown-wrap svg { transform: rotate(-90deg); display: block; }
+
+        .ring-bg { fill: none; stroke: #ecf0f1; stroke-width: 4; }
+        .ring-fg {
+            fill: none;
+            stroke: #3498db;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 113;
+            stroke-dashoffset: 0;
+        }
+
+        #countdown-num {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.82rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* Nav controls */
+        .controls { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        /* Autoscroll button */
+        #autoScrollBtn {
+            background: linear-gradient(135deg, #8e44ad, #6c3483);
+            padding: 12px 22px;
+            font-size: 1rem;
+        }
+        #autoScrollBtn:hover:not(:disabled) { background: linear-gradient(135deg, #6c3483, #5b2c6f); }
+        #autoScrollBtn.active {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.5); }
+            50%      { box-shadow: 0 0 0 8px rgba(231,76,60,0); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ancient India Review</h1>
+    <div id="progress"></div>
+
+    <div class="flashcard-container" onclick="flipCard()">
+        <div class="flashcard" id="flashcard">
+            <div class="card-face card-front" id="card-front"></div>
+            <div class="card-face card-back"  id="card-back"></div>
+        </div>
+    </div>
+
+    <div class="hint">Click the card to reveal the answer</div>
+
+    <div id="tts-bar">
+        <button id="tts-btn" onclick="toggleTTS()">&#9654; Play</button>
+        <span id="tts-status">Press Play to hear the question</span>
+        <div id="countdown-wrap">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+                <circle class="ring-bg" cx="22" cy="22" r="18"/>
+                <circle class="ring-fg" id="ring-fg" cx="22" cy="22" r="18"/>
+            </svg>
+            <span id="countdown-num">15</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="prevBtn" onclick="prevCard()">Previous</button>
+        <button id="nextBtn" onclick="nextCard()">Next</button>
+        <button id="autoScrollBtn" onclick="toggleAutoScroll()">&#9654;&#9654; Auto-scroll</button>
+    </div>
+
+    <script>
+        const flashcards = [{"question":"What is the oldest name for the civilization that existed from 2500 BC to 1750 BC?","answer":"Indus Civilization"},{"question":"According to archaeological tradition, what is the most appropriate name for the Indus Civilization and why?","answer":"Harappan Civilization, because Harappa was the first discovered site."},{"question":"According to the geographical point of view, what is the most suitable name for the civilization?","answer":"Indus-Saraswati Civilization (largest concentration of settlements is here; 80% along the Saraswati)."},{"question":"What is the most accepted period of the Indus Civilization?","answer":"2500 BC - 1750 BC (established by Carbon-14 dating)."},{"question":"Who was the first scholar to use the term 'Indus Civilization'?","answer":"John Marshall"},{"question":"To which historical period does the Indus Civilization belong?","answer":"Proto-Historic Period (Chalcolithic Age / Bronze Age)"},{"question":"Over which regions was the Indus Civilization spread?","answer":"Sindh, Baluchistan, Punjab, Haryana, Rajasthan, Gujarat, Western U.P., and Northern Maharashtra."},{"question":"What axis do scholars generally believe represents the heartland of the Indus Civilization?","answer":"Harappa-Ghaggar-Mohenjodaro axis"},{"question":"What are the Northern-most sites of the Indus Civilization (Earlier and Current)?","answer":"Earlier: Ropar (Sutlej River, Punjab). Now: Manda (Chenab River, Jammu-Kashmir)."},{"question":"What are the Southern-most sites of the Indus Civilization (Earlier and Current)?","answer":"Earlier: Bhagatrav (Kim River, Gujarat). Now: Daimabad (Pravara River, Maharashtra)."},{"question":"What is the Eastern-most site of the Indus Civilization?","answer":"Alamgirpur (Hindon River, Uttar Pradesh)"},{"question":"What is the Western-most site of the Indus Civilization?","answer":"Sutkagendor (Dashk River, Makran Coast on the Pakistan-Iran Border)"},{"question":"What were the Capital Cities of the Indus Civilization?","answer":"Harappa and Mohenjodaro"},{"question":"Name the Port Cities of the Indus Civilization.","answer":"Lothal, Sutkagendor, Allahdino, Balakot, Kuntasi"},{"question":"On which river is Harappa located, and who excavated it?","answer":"River: Ravi. Excavators: Daya Ram Sahni (1921), Madho Swaroop Vatsa (1926), Wheeler (1946)."},{"question":"What does 'Mohenjodaro' mean, on which river is it located, and who excavated it?","answer":"Meaning: Nakhlistan (Oasis of Sindh). River: Indus. Excavators: Rakhal Das Bannerji (1922), Mackay (1927), Wheeler (1930)."},{"question":"Where is Chanhudaro located (River and Province)?","answer":"River: Indus. Province: Nawabshah, Sindh (Pakistan)."},{"question":"Where is Lothal located and who excavated it?","answer":"River: Bhogava, Ahmedabad, Gujarat (India). Excavator: S.R. Rao (1954)."},{"question":"What does 'Kalibanga' mean, where is it located, and who excavated it?","answer":"Meaning: The bangles of black colour. River: Ghaggar, Rajasthan. Excavators: Amalanand Ghosh (1951), B.V. Lal and B.K. Thapar (1961)."},{"question":"Where is Banawali located and who excavated it?","answer":"River: Ghaggar, Fatehabad, Haryana (India). Excavator: R.S. Bist (1973)."},{"question":"Where is Dholavira located and who excavated it?","answer":"River: Luni, Kutchh, Gujarat (India). Excavator: J.P. Joshi (1967-68)."},{"question":"Which site is known for having 6 Granaries in a row, Workmen's quarters, and Cemetery (R-37, H)?","answer":"Harappa"},{"question":"At which site were stone symbols of Lingam and Yoni, a copper scale, and a copper-made mirror found?","answer":"Harappa"},{"question":"Where was the Great Granary and the Great Bath (the largest building of the civilization) found?","answer":"Mohenjodaro"},{"question":"Which site yielded the Bronze Image of a nude woman dancer, the Pashupati Mahadeva (Proto-Shiva) seal, and a Steatite image of a bearded man?","answer":"Mohenjodaro"},{"question":"Where was a fragment of woven cotton discovered, along with 1398 seals (56% of total seals of civilization)?","answer":"Mohenjodaro"},{"question":"Which Indus site is famously known as a \"City without a citadel\"?","answer":"Chanhudaro"},{"question":"At which site were an inkpot, lipstick, and the imprint of a dog's paw on a brick found?","answer":"Chanhudaro"},{"question":"Which site featured a Dockyard and yielded evidence of rice husk?","answer":"Lothal"},{"question":"Where were double burials (male and female in a single grave), a terracotta model of a ship, and fire altars found?","answer":"Lothal"},{"question":"Which site provides evidence of a ploughed field surface (Pre-Harappan), decorated bricks, and 7 Fire altars?","answer":"Kalibanga"},{"question":"Which site is known for the lack of chess-board/gridiron pattern town planning and a lack of a systematic drainage system?","answer":"Banawali"},{"question":"Where was a unique water harnessing system, giant water reservoirs (a large well and bath), and a stadium found?","answer":"Dholavira"},{"question":"Which is the only site to be divided into 3 parts and contains the largest Harappan inscription used for civic purposes?","answer":"Dholavira"},{"question":"Which is the only Indus site where the remains (bones) of a horse have actually been found, along with oval graves and pot burials?","answer":"Surkotada"},{"question":"At which site were bronze images including a charioteer with a chariot, ox, elephant, and rhinoceros found?","answer":"Daimabad"},{"question":"What is the largest site of the Indus Civilization overall?","answer":"Mohenjodaro"},{"question":"What is the largest Indian site of the Indus Civilization?","answer":"Rakhigarhi"},{"question":"What were the four common features of major Indus cities regarding town planning and construction?","answer":"1. Systematic town-planning on a 'grid system'. 2. Use of burnt bricks. 3. Underground drainage system. 4. Fortified citadel."},{"question":"Which major Indus city was the exception to the rule and did NOT have a fortified citadel?","answer":"Chanhudaro"},{"question":"What were the two main crops cultivated by the Indus people?","answer":"Wheat and Barley"},{"question":"At which two sites is there evidence of rice cultivation?","answer":"Lothal and Rangpur (Gujarat) only"},{"question":"The Indus people were the first in the world to produce which crop?","answer":"Cotton"},{"question":"Which major predatory animal was NOT known to the Indus people?","answer":"Lion"},{"question":"From which site has a single instance of the Indian rhinoceros been reported?","answer":"Amari"},{"question":"With which two major foreign regions did the Indus civilization have flourishing trade?","answer":"Mesopotamia/Sumeria (Modern Iraq) and Bahrain"}];
+
+        // ── State ──────────────────────────────────────────────
+        let currentIndex = 0;
+        let ttsActive    = false;
+        let countdownInterval = null;
+        let countdownSec = 15;
+        const WAIT_SECS  = 15;
+        const CIRCUMFERENCE = 2 * Math.PI * 18; // ~113.1
+
+        // ── DOM refs ───────────────────────────────────────────
+        const cardEl     = document.getElementById('flashcard');
+        const frontEl    = document.getElementById('card-front');
+        const backEl     = document.getElementById('card-back');
+        const progressEl = document.getElementById('progress');
+        const prevBtn    = document.getElementById('prevBtn');
+        const nextBtn    = document.getElementById('nextBtn');
+        const ttsBtn     = document.getElementById('tts-btn');
+        const ttsStatus  = document.getElementById('tts-status');
+        const cWrap      = document.getElementById('countdown-wrap');
+        const ringFg     = document.getElementById('ring-fg');
+        const cNum       = document.getElementById('countdown-num');
+
+        // ── Card navigation ────────────────────────────────────
+        function updateCard() {
+            stopTTS();
+            cardEl.classList.remove('is-flipped');
+            setTimeout(() => {
+                frontEl.innerText    = flashcards[currentIndex].question;
+                backEl.innerText     = flashcards[currentIndex].answer;
+                progressEl.innerText = `Card ${currentIndex + 1} of ${flashcards.length}`;
+                prevBtn.disabled     = currentIndex === 0;
+                nextBtn.disabled     = currentIndex === flashcards.length - 1;
+            }, 150);
+        }
+
+        function flipCard() { cardEl.classList.toggle('is-flipped'); }
+
+        function nextCard() {
+            if (currentIndex < flashcards.length - 1) { currentIndex++; updateCard(); }
+        }
+        function prevCard() {
+            if (currentIndex > 0) { currentIndex--; updateCard(); }
+        }
+
+        // ── TTS helpers ────────────────────────────────────────
+        function speak(text, onEnd) {
+            window.speechSynthesis.cancel();
+            const utt = new SpeechSynthesisUtterance(text);
+            utt.rate  = 0.92;
+            utt.pitch = 1;
+            utt.lang  = 'en-IN';
+            if (onEnd) utt.onend = onEnd;
+            window.speechSynthesis.speak(utt);
+        }
+
+        function startCountdown(onDone) {
+            countdownSec = WAIT_SECS;
+            cNum.innerText = countdownSec;
+            ringFg.style.transition = 'none';
+            ringFg.style.stroke = '#3498db';
+            ringFg.style.strokeDashoffset = 0;
+            cWrap.style.display = 'block';
+
+            // Start arc animation on next paint
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    ringFg.style.transition = 'stroke-dashoffset ' + WAIT_SECS + 's linear, stroke 0.3s';
+                    ringFg.style.strokeDashoffset = CIRCUMFERENCE;
+                });
+            });
+
+            countdownInterval = setInterval(() => {
+                countdownSec--;
+                cNum.innerText = countdownSec;
+                if (countdownSec <= 5) ringFg.style.stroke = '#e74c3c';
+                if (countdownSec <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    cWrap.style.display = 'none';
+                    onDone();
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+            cWrap.style.display = 'none';
+            ringFg.style.transition = 'none';
+            ringFg.style.strokeDashoffset = 0;
+        }
+
+        function setTTSIdle(msg) {
+            ttsActive = false;
+            ttsBtn.textContent = '\u25B6 Play';
+            ttsBtn.classList.remove('stop');
+            ttsStatus.textContent = msg || 'Press Play to hear the question';
+        }
+
+        function stopTTS() {
+            window.speechSynthesis.cancel();
+            stopCountdown();
+            setTTSIdle('Press Play to hear the question');
+        }
+
+        // ── Main TTS flow ──────────────────────────────────────
+        function toggleTTS() {
+            if (ttsActive) { stopTTS(); return; }
+
+            if (!window.speechSynthesis) {
+                ttsStatus.textContent = 'Speech synthesis not supported in this browser.';
+                return;
+            }
+
+            ttsActive = true;
+            ttsBtn.textContent = '\u25A0 Stop';
+            ttsBtn.classList.add('stop');
+
+            // Ensure card shows the question first
+            cardEl.classList.remove('is-flipped');
+
+            // Step 1: Read the question aloud
+            ttsStatus.textContent = '🔊 Reading question…';
+            speak(flashcards[currentIndex].question, () => {
+                if (!ttsActive) return;
+
+                // Step 2: 15-second countdown
+                ttsStatus.textContent = '⏳ Think about it… answer in 15s';
+                startCountdown(() => {
+                    if (!ttsActive) return;
+
+                    // Step 3: Flip card, then read the answer
+                    cardEl.classList.add('is-flipped');
+                    ttsStatus.textContent = '🔊 Reading answer…';
+                    setTimeout(() => {
+                        speak(flashcards[currentIndex].answer, () => {
+                            setTTSIdle('Done! Press Play to repeat');
+                        });
+                    }, 700); // wait for card flip animation
+                });
+            });
+        }
+
+        // ── Auto-scroll state ──────────────────────────────────
+        let autoScrollActive = false;
+        let autoScrollTimeout = null;
+        const autoBtn = document.getElementById('autoScrollBtn');
+
+        function stopAutoScroll() {
+            autoScrollActive = false;
+            autoBtn.textContent = '\u25B6\u25B6 Auto-scroll';
+            autoBtn.classList.remove('active');
+            if (autoScrollTimeout) { clearTimeout(autoScrollTimeout); autoScrollTimeout = null; }
+            stopTTS();
+        }
+
+        function runAutoScrollStep() {
+            if (!autoScrollActive) return;
+
+            // Ensure card shows the question first
+            cardEl.classList.remove('is-flipped');
+
+            // Short delay so card has time to un-flip visually
+            autoScrollTimeout = setTimeout(() => {
+                if (!autoScrollActive) return;
+
+                // Step 1: scroll card into view
+                document.querySelector('.flashcard-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Step 2: read question
+                ttsStatus.textContent = '🔊 Reading question…';
+                speak(flashcards[currentIndex].question, () => {
+                    if (!autoScrollActive) return;
+
+                    // Step 3: 15-second countdown
+                    ttsStatus.textContent = '⏳ Think about it… answer in 15s';
+                    startCountdown(() => {
+                        if (!autoScrollActive) return;
+
+                        // Step 4: flip card and read answer
+                        cardEl.classList.add('is-flipped');
+                        ttsStatus.textContent = '🔊 Reading answer…';
+                        autoScrollTimeout = setTimeout(() => {
+                            if (!autoScrollActive) return;
+                            speak(flashcards[currentIndex].answer, () => {
+                                if (!autoScrollActive) return;
+
+                                // Step 5: move to next card, or finish
+                                if (currentIndex < flashcards.length - 1) {
+                                    currentIndex++;
+                                    updateCard();
+                                    // updateCard calls stopTTS which resets state — restart flow
+                                    autoScrollTimeout = setTimeout(() => {
+                                        if (autoScrollActive) runAutoScrollStep();
+                                    }, 800);
+                                } else {
+                                    // All cards done
+                                    setTTSIdle('✅ All done! Auto-scroll finished.');
+                                    stopAutoScroll();
+                                }
+                            });
+                        }, 700); // wait for card flip animation
+                    });
+                });
+            }, 400);
+        }
+
+        function toggleAutoScroll() {
+            if (autoScrollActive) {
+                stopAutoScroll();
+                return;
+            }
+            if (!window.speechSynthesis) {
+                ttsStatus.textContent = 'Speech synthesis not supported in this browser.';
+                return;
+            }
+            autoScrollActive = true;
+            autoBtn.textContent = '\u25A0 Stop Auto';
+            autoBtn.classList.add('active');
+            // If manual TTS is running, stop it first
+            stopTTS();
+            // Reset ttsActive so inner checks work (stopTTS sets it false — our flag is autoScrollActive)
+            runAutoScrollStep();
+        }
+
+        // ── Keyboard shortcuts ─────────────────────────────────
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); flipCard(); }
+            if (e.code === 'ArrowRight') nextCard();
+            if (e.code === 'ArrowLeft')  prevCard();
+            if (e.code === 'KeyP')       toggleTTS();
+            if (e.code === 'KeyA')       toggleAutoScroll();
+        });
+
+        // ── Init ───────────────────────────────────────────────
+        updateCard();
+    </script>
+</body>
+</html>
